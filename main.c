@@ -32,8 +32,10 @@ void random_permutation(int *array, int length)
 
 typedef struct s_state {
 	int *stack[2];
-	int length[2];
+	int top[2];
+	int len[2];
 	int operation_count;
+	int wrap;
 } t_state;
 
 enum {sa, sb, ss, pa, pb, ra, rb, rr, rra, rrb, rrr};
@@ -42,8 +44,8 @@ void display_state(const t_state *s)
 {
 	for (int i = 0; i < 2; i++) {
 		printf("%c:", "AB"[i]);
-		for (int j = 0; j < s->length[i]; j++)
-			printf(" %d", s->stack[i][j]);
+		for (int j = 0; j < s->len[i]; j++)
+			printf(" %d", s->stack[i][(s->top[i] + j) % s->wrap]);
 		printf("\n");
 	}
 	printf("\n");
@@ -56,69 +58,88 @@ void swap(int *a, int *b)
 	*b = temp;
 }
 
-int array_is_sorted(const int *array, int length)
+int stack_is_sorted(t_state *s, int dst)
 {
-	for (int i = 1; i < length; i++)
-		if (array[i - 1] >= array[i])
+	for (int i = 1; i < s->len[dst]; i++)
+		if (s->stack[dst][(s->top[dst] + i - 1) % s->wrap] >= s->stack[dst][(s->top[dst] + i) % s->wrap])
 			return 0;
 	return 1;
 }
 
-void array_rotate(int *array, int length, int step)
+void stack_swap(t_state *s, int dst)
 {
-	int temp = array[(length - step) % length];
-	for (int i = 1; i <= length; i++) {
-		int j = (i * step + length - step) % length;
-		int temp2 = array[j];
-		array[j] = temp;
-		temp = temp2;
+	if (s->len[dst] > 1)
+	{
+		int i = (s->top[dst] + 0) % s->wrap;
+		int j = (s->top[dst] + 1) % s->wrap;
+		int temp = s->stack[dst][i];
+		s->stack[dst][i] = s->stack[dst][j];
+		s->stack[dst][j] = temp;
 	}
 }
 
-void array_push(int *dst, int *src, int dst_length, int src_length)
+void stack_push(t_state *s, int dst, int src)
 {
-	int popped = src[0];
-	array_rotate(src, src_length + 0, -1);
-	array_rotate(dst, dst_length + 1, +1);
-	dst[0] = popped;
+	if (s->len[src] > 0)
+	{
+		s->top[dst] = (s->top[dst] + s->wrap - 1) % s->wrap;
+		s->stack[dst][s->top[dst]] = s->stack[src][s->top[src]];
+		s->top[src] = (s->top[src] + 1) % s->wrap;
+		s->len[dst]++;
+		s->len[src]--;
+	}
+}
+
+void stack_rotate(t_state *s, int dst, int step)
+{
+	if (step == 1)
+	{
+		s->top[dst] = (s->top[dst] + s->wrap - step) % s->wrap;
+		s->stack[dst][s->top[dst]] = s->stack[dst][(s->top[dst] + s->len[dst]) % s->wrap];
+	}
+	else if (step == -1)
+	{
+		s->top[dst] = (s->top[dst] + s->wrap - step) % s->wrap;
+		s->stack[dst][(s->top[dst] + s->len[dst] + step) % s->wrap] = s->stack[dst][(s->top[dst] + s->wrap + step) % s->wrap];
+	}
 }
 
 void run_operation(t_state *s, int op)
 {
-	if ((op == sa || op == ss) && s->length[0] > 1)
-		swap(&s->stack[0][0], &s->stack[0][1]);
-	if ((op == sb || op == ss) && s->length[1] > 1)
-		swap(&s->stack[1][0], &s->stack[1][1]);
-	if (op == pa && s->length[1] > 0)
-		array_push(s->stack[0], s->stack[1], ++s->length[0], s->length[1]--);
-	if (op == pb && s->length[0] > 0)
-		array_push(s->stack[1], s->stack[0], ++s->length[1], s->length[0]--);
+	if (op == sa || op == ss)
+		stack_swap(s, 0);
+	if (op == sb || op == ss)
+		stack_swap(s, 1);
+	if (op == pa)
+		stack_push(s, 0, 1);
+	if (op == pb)
+		stack_push(s, 1, 0);
 	if (op == ra || op == rr)
-		array_rotate(s->stack[0], s->length[0], -1);
+		stack_rotate(s, 0, -1);
 	if (op == rb || op == rr)
-		array_rotate(s->stack[1], s->length[1], -1);
-	if (op == rra || op ==	rrr)
-		array_rotate(s->stack[0], s->length[0], +1);
-	if (op == rrb || op ==	rrr)
-		array_rotate(s->stack[1], s->length[1], +1);
+		stack_rotate(s, 1, -1);
+	if (op == rra || op == rrr)
+		stack_rotate(s, 0, +1);
+	if (op == rrb || op == rrr)
+		stack_rotate(s, 1, +1);
 	s->operation_count++;
 }
 
-int index_of_value(const int *array, int length, int value)
+int index_of_value(t_state *s, int stack, int value)
 {
-	for (int i = 0; i < length; i++)
-		if (array[i] == value)
+	for (int i = 0; i < s->len[stack]; i++)
+		if (s->stack[stack][(s->top[stack] + i) % s->wrap] == value)
 			return i;
 	return -1;
 }
 
-#if 1 // Dumb sort, rotates until finding the next value in the order.
+// Dumb sort, rotates until finding the next value in the order.
 void sort(t_state *s)
 {
-	const int input_length = s->length[0];
+	const int input_length = s->len[0];
 	for (int i = 0; i < input_length; i++) {
-		int a = index_of_value(s->stack[0], s->length[0], i);
-		int b = index_of_value(s->stack[1], s->length[1], i);
+		int a = index_of_value(s, 0, i);
+		int b = index_of_value(s, 1, i);
 		if (a == 0) {
 			run_operation(s, ra);
 			continue;
@@ -127,7 +148,7 @@ void sort(t_state *s)
 		} else if (b == 0) {
 			run_operation(s, pa);
 		} else if (b > 0) {
-			if (b * 2 > s->length[1]) {
+			if (b * 2 > s->len[1]) {
 				run_operation(s, rrb);
 			} else {
 				run_operation(s, rb);
@@ -136,23 +157,23 @@ void sort(t_state *s)
 		i--;
 	}
 }
-#endif
 
 int main(void)
 {
-	const int length = 500;
+	const int length = 5;
 	int stacks[2][length * 2];
 	random_permutation(stacks[0], length);
 	t_state state = {
 		.stack = {stacks[0], stacks[1]},
-		.length[0] = length,
+		.len[0] = length,
+		.wrap = length * 2,
 	};
 	printf("Input:\n");
 	display_state(&state);
 	sort(&state);
 	printf("Output:\n");
 	display_state(&state);
-	int is_sorted = array_is_sorted(state.stack[0], state.length[0]);
+	int is_sorted = stack_is_sorted(&state, 0);
 	printf("Total operations: %d\n", state.operation_count);
 	printf("Order: %s\n", is_sorted ? GREEN_OK : RED_KO);
 	printf("Moves: %d", state.operation_count);
