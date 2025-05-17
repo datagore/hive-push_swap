@@ -90,7 +90,6 @@ void print_move(int move_id)
 		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
 		"rrb\n", "rrr\n"
 	};
-	fflush(stdout); // FIXME: Remove
 	write(1, move_names[move_id], 3 + (move_id >= rra));
 }
 
@@ -118,14 +117,69 @@ void perform_move(t_stack *a, t_stack *b, int move)
 	move_count++;
 }
 
+int min(int a, int b)
+{
+	if (a < b)
+		return a;
+	return b;
+}
+
+int find_place(t_stack *a, t_stack *b, int b_index)
+{
+	int a_index = 0;
+	const int b_value = stack_get(b, b_index);
+	while (a->len > 0 && stack_get(a, a_index) < b_value)
+		a_index++;
+	return a_index;
+}
+
+int calculate_cost(t_stack *a, t_stack *b, int rb)
+{
+	int ra = find_place(a, b, rb);
+	int rra = a->len - ra;
+	int rrb = b->len - rb;
+	return min(ra, rra) + min(ra, rrb);
+}
+
+int get_index_of_best_move(t_stack *a, t_stack *b)
+{
+	int best_score = INT_MAX;
+	int best_index = 0;
+	for (int index = 0; index < b->len; index++) {
+		int score = calculate_cost(a, b, index);
+		if (score < best_score) {
+			best_score = score;
+			best_index = index;
+		}
+	}
+	return best_index;
+}
+
+int get_index_of_value(t_stack *s, int value)
+{
+	int index = 0;
+	while (index < s->len && stack_get(s, index) != value)
+		index++;
+	return index;
+}
+
+void rotate_to_index(t_stack *a, t_stack *b, int index)
+{
+	if (index < b->len / 2)
+		for (int i = 0; i < index; i++)
+			perform_move(a, b, rb);
+	else
+		for (int i = b->len; i > index; i--)
+			perform_move(a, b, rrb);
+}
+
 void sort(t_stack *a, t_stack *b)
 {
 	const int length = a->len;
 	while (a->len > 0)
 		perform_move(a, b, pb);
 	for (int i = length - 1; i >= 0; i--) {
-		while (stack_get(b, 0) != i)
-			perform_move(a, b, rb);
+		rotate_to_index(a, b, get_index_of_value(b, i));
 		perform_move(a, b, pa);
 	}
 }
@@ -145,6 +199,7 @@ int main(void)
 	}
 
 	printf("Input:\n");
+	fflush(stdout);
 	stack_print(&stacks[0]);
 	stack_print(&stacks[1]);
 	sort(&stacks[0], &stacks[1]);
