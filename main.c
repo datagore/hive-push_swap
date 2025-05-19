@@ -36,12 +36,12 @@ typedef struct s_stack {
 
 int stack_get(const t_stack *s, int index)
 {
-	return s->data[(s->top + s->len * (index < 0) + index) % s->cap];
+	return s->data[(s->top + index) % s->cap];
 }
 
 void stack_set(t_stack *s, int index, int value)
 {
-	s->data[(s->top + s->len * (index < 0) + index) % s->cap] = value;
+	s->data[(s->top + index) % s->cap] = value;
 }
 
 void stack_push(t_stack *dst, t_stack *src)
@@ -98,7 +98,7 @@ void print_move(int move_id)
 
 static int move_count;
 
-void perform_move(t_stack *a, t_stack *b, int move)
+int perform_move(t_stack *a, t_stack *b, int move)
 {
 	print_move(move);
 	if (move == pa)
@@ -118,13 +118,7 @@ void perform_move(t_stack *a, t_stack *b, int move)
 	if (move == rrb || move == rrr)
 		stack_rotate(b, +1);
 	move_count++;
-}
-
-int min(int a, int b)
-{
-	if (a < b)
-		return a;
-	return b;
+	return (1);
 }
 
 int find_index_of_min_value(t_stack *a)
@@ -153,51 +147,49 @@ int find_place(t_stack *a, t_stack *b, int b_index)
 
 int move_number(t_stack *a, t_stack *b, int b_index, int move)
 {
+	int score = 0;
+#if 0
+	int a_dist = find_place(a, b, b_index) - a->len / 2;
+	int b_dist = b_index - b->len / 2;
+	while (a_dist != 0) {
+		score += !move || perform_move(a, b, a_dist > 0 ? ra : rra);
+		a_dist += (a_dist < 0) - (a_dist > 0);
+	}
+	while (b_dist != 0) {
+		score += !move || perform_move(a, b, b_dist > 0 ? rb : rrb);
+		b_dist += (b_dist < 0) - (b_dist > 0);
+	}
+#else
 	int rb_score = b_index;
 	int ra_score = find_place(a, b, b_index);
 	int rra_score = a->len - ra_score;
 	int rrb_score = b->len - rb_score;
-	int score = 0;
-#if 1
 	if (ra_score < rra_score && rb_score < rrb_score)
 		while (ra_score > 0 && rb_score > 0) {
-			if (move) perform_move(a, b, rr);
+			score += !move || perform_move(a, b, rr);
 			ra_score--;
 			rb_score--;
-			score++;
-	}
+		}
 	if (rra_score < ra_score && rrb_score < rb_score)
 		while (rra_score > 0 && rrb_score > 0) {
-			if (move) perform_move(a, b, rrr);
+			score += !move || perform_move(a, b, rrr);
 			rra_score--;
 			rrb_score--;
-			score++;
-	}
+		}
+	if (ra_score < rra_score)
+		while (ra_score-- > 0)
+			score += !move || perform_move(a, b, ra);
+	else
+		while (rra_score-- > 0)
+			score += !move || perform_move(a, b, rra);
+	if (rb_score < rrb_score)
+		while (rb_score-- > 0)
+			score += !move || perform_move(a, b, rb);
+	else
+		while (rrb_score-- > 0)
+			score += !move || perform_move(a, b, rrb);
 #endif
-	if (ra_score < rra_score) {
-		while (ra_score-- > 0) {
-			if (move) perform_move(a, b, ra);
-			score++;
-		}
-	} else {
-		while (rra_score-- > 0) {
-			if (move) perform_move(a, b, rra);
-			score++;
-		}
-	}
-	if (rb_score < rrb_score) {
-		while (rb_score-- > 0) {
-			if (move) perform_move(a, b, rb);
-			score++;
-		}
-	} else {
-		while (rrb_score-- > 0) {
-			if (move) perform_move(a, b, rrb);
-			score++;
-		}
-	}
-	if (move) perform_move(a, b, pa);
-	return score;
+	return score + (!move || perform_move(a, b, pa));
 }
 
 int get_index_of_best_move(t_stack *a, t_stack *b)
@@ -222,14 +214,11 @@ int get_index_of_value(t_stack *s, int value)
 	return index;
 }
 
-void rotate_to_index(t_stack *a, t_stack *b, int index)
+void rotate_to_top(t_stack *a, t_stack *b, int index)
 {
-	if (index < b->len / 2)
-		for (int i = 0; i < index; i++)
-			perform_move(a, b, rb);
-	else
-		for (int i = b->len; i > index; i--)
-			perform_move(a, b, rrb);
+	int move = index < a->len / 2 ? ra : rra;
+	while (stack_get(a, 0) != 0)
+		perform_move(a, b, move);
 }
 
 void sort(t_stack *a, t_stack *b)
@@ -248,15 +237,23 @@ void sort(t_stack *a, t_stack *b)
 		int b_index = get_index_of_best_move(a, b);
 		move_number(a, b, b_index, 1);
 	}
+	rotate_to_top(a, b, find_index_of_min_value(a));
+}
+
+int stack_is_sorted(const t_stack *stack)
+{
+	for (int i = 0; i < stack->len - 1; i++)
+		if (stack_get(stack, i) >= stack_get(stack, i + 1))
+			return 0;
+	return 1;
 }
 
 int main(void)
 {
-#if 1
 	srand(time(NULL));
 	rand();
-#endif
 
+	// TODO: Use minimal sequence for 3 and 5.
 	const int length = 500;
 	int array[length * 4];
 	random_permutation(array, length);
@@ -280,5 +277,8 @@ int main(void)
 	stack_print(&stacks[0]);
 	stack_print(&stacks[1]);
 
-	printf("\nMoves: %d\n", move_count);
+	int sorted = stack_is_sorted(&stacks[0]);
+	printf("\n%s ", move_count < 5500 ? GREEN_OK : RED_KO);
+	printf("%d moves\n", move_count);
+	printf("%s %ssorted\n", sorted ? GREEN_OK : RED_KO, sorted ? "" : "not ");
 }
