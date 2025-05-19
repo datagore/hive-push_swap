@@ -17,14 +17,14 @@
 
 void random_permutation(int *array, int length)
 {
-    for (int i = 0; i < length; i++)
-        array[i] = i;
-    for (int i = 0; i < length - 1; i++) {
-        int j = rand() % (length - i) + i;
-        int temporary = array[j];
-        array[j] = array[i];
-        array[i] = temporary;
-    }
+	for (int i = 0; i < length; i++)
+		array[i] = i;
+	for (int i = 0; i < length - 1; i++) {
+		int j = rand() % (length - i) + i;
+		int temporary = array[j];
+		array[j] = array[i];
+		array[i] = temporary;
+	}
 }
 
 typedef struct s_stack {
@@ -76,10 +76,9 @@ void stack_rotate(t_stack *s, int step)
 
 void stack_print(const t_stack *s)
 {
-	printf("[");
 	for (int i = 0; i < s->len; i++)
-		printf("%s%d", i ? ", " : "", stack_get(s, i));
-	printf("]\n");
+		printf("%s%d", i ? " " : "", stack_get(s, i));
+	printf("\n");
 }
 
 enum {sa, sb, ss, pa, pb, ra, rb, rr, rra, rrb, rrr};
@@ -90,7 +89,7 @@ void print_move(int move_id)
 		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
 		"rrb\n", "rrr\n"
 	};
-#if 1
+#if 0
 	write(1, move_names[move_id], 3 + (move_id >= rra));
 #else
 	(void) move_names, (void) move_id;
@@ -158,19 +157,46 @@ int move_number(t_stack *a, t_stack *b, int b_index, int move)
 	int ra_score = find_place(a, b, b_index);
 	int rra_score = a->len - ra_score;
 	int rrb_score = b->len - rb_score;
-	int score = min(ra_score, rra_score) + min(ra_score, rrb_score);
-	if (move) {
-		for (int i = 0; ra_score <= rra_score && i < ra_score; i++)
-			perform_move(a, b, ra);
-		for (int i = 0; ra_score > rra_score && i < rra_score; i++)
-			perform_move(a, b, rra);
-		for (int i = 0; rb_score <= rrb_score && i < rb_score; i++)
-			perform_move(a, b, rb);
-		for (int i = 0; rb_score > rrb_score && i < rrb_score; i++)
-			perform_move(a, b, rrb);
+	int score = 0;
+#if 1
+	if (ra_score < rra_score && rb_score < rrb_score)
+		while (ra_score > 0 && rb_score > 0) {
+			if (move) perform_move(a, b, rr);
+			ra_score--;
+			rb_score--;
+			score++;
 	}
-	if (move)
-		perform_move(a, b, pa);
+	if (rra_score < ra_score && rrb_score < rb_score)
+		while (rra_score > 0 && rrb_score > 0) {
+			if (move) perform_move(a, b, rrr);
+			rra_score--;
+			rrb_score--;
+			score++;
+	}
+#endif
+	if (ra_score < rra_score) {
+		while (ra_score-- > 0) {
+			if (move) perform_move(a, b, ra);
+			score++;
+		}
+	} else {
+		while (rra_score-- > 0) {
+			if (move) perform_move(a, b, rra);
+			score++;
+		}
+	}
+	if (rb_score < rrb_score) {
+		while (rb_score-- > 0) {
+			if (move) perform_move(a, b, rb);
+			score++;
+		}
+	} else {
+		while (rrb_score-- > 0) {
+			if (move) perform_move(a, b, rrb);
+			score++;
+		}
+	}
+	if (move) perform_move(a, b, pa);
 	return score;
 }
 
@@ -208,10 +234,16 @@ void rotate_to_index(t_stack *a, t_stack *b, int index)
 
 void sort(t_stack *a, t_stack *b)
 {
-	while (a->len > 2)
-		perform_move(a, b, pb);
-	if (stack_get(a, 0) > stack_get(a, 1))
-		perform_move(a, b, sa);
+	const int length = a->len;
+	while (a->len > 1) {
+		int value = stack_get(a, 0);
+		if (value < length / 2)
+			perform_move(a, b, pb);
+		else {
+			perform_move(a, b, pb);
+			perform_move(a, b, rb);
+		}
+	}
 	while (b->len > 0) {
 		int b_index = get_index_of_best_move(a, b);
 		move_number(a, b, b_index, 1);
@@ -225,7 +257,7 @@ int main(void)
 	rand();
 #endif
 
-	const int length = 100;
+	const int length = 500;
 	int array[length * 4];
 	random_permutation(array, length);
 
