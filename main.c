@@ -104,34 +104,25 @@ int find_index_of_min_value(t_stack *a)
 	}
 }
 
-int find_place(t_stack *a, t_stack *b, int b_index)
+int find_place(t_stack *a, int value)
 {
-	// TODO: Use binary search somehow.
-#if 0
 	int base = find_index_of_min_value(a);
-	int b_value = stack_get(b, b_index);
-	int lo = 0, hi = a->len - 1;
-	while (lo <= hi) {
-		int mid = (lo + hi) / 2;
-		int a_value = stack_get(a, base + mid);
-		if (b_value > a_value) { hi = mid - 1; continue; }
-		if (b_value < a_value) { lo = mid + 1; continue; }
-		return mid;
+	int lo = 0, hi = a->len;
+	while (lo < hi) {
+		int mid_index = (lo + hi) / 2;
+		int mid_value = stack_get(a, (base + mid_index) % a->len);
+		if (mid_value > value)
+			hi = mid_index;
+		else
+			lo = mid_index + 1;
 	}
-	return lo;
-#else
-	int b_value = stack_get(b, b_index);
-	int a_index = find_index_of_min_value(a);
-	for (int i = 0; i < a->len && stack_get(a, a_index) < b_value; i++)
-		a_index = (a_index + 1) % a->len;
-	return a_index;
-#endif
+	return (base + hi + a->len) % a->len;
 }
 
 int move_number(t_stack *a, t_stack *b, int b_index, int score_only)
 {
 	int score = 0;
-	int a_index = find_place(a, b, b_index);
+	int a_index = find_place(a, stack_get(b, b_index));
 	int a_dist = a_index - a->len * (a_index > a->len / 2);
 	int b_dist = b_index - b->len * (b_index > b->len / 2);
 	while (a_dist * b_dist > 0) {
@@ -164,21 +155,6 @@ int get_index_of_best_move(t_stack *a, t_stack *b)
 	return best_index;
 }
 
-int get_index_of_value(t_stack *s, int value)
-{
-	int index = 0;
-	while (index < s->len && stack_get(s, index) != value)
-		index++;
-	return index;
-}
-
-void rotate_to_top(t_stack *a, t_stack *b, int index)
-{
-	int move = index < a->len / 2 ? ra : rra;
-	while (stack_get(a, 0) != 0)
-		perform_move(a, b, move);
-}
-
 void sort(t_stack *a, t_stack *b)
 {
 	const int half = a->len / 2;
@@ -195,7 +171,9 @@ void sort(t_stack *a, t_stack *b)
 		int b_index = get_index_of_best_move(a, b);
 		move_number(a, b, b_index, 0);
 	}
-	rotate_to_top(a, b, find_index_of_min_value(a));
+	int zero = find_index_of_min_value(a);
+	while (stack_get(a, 0) != 0)
+		perform_move(a, b, ra + 3 * (zero >= half));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
