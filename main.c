@@ -145,51 +145,26 @@ int find_place(t_stack *a, t_stack *b, int b_index)
 	return a_index;
 }
 
-int move_number(t_stack *a, t_stack *b, int b_index, int move)
+int move_number(t_stack *a, t_stack *b, int b_index, int score_only)
 {
 	int score = 0;
-#if 0
-	int a_dist = find_place(a, b, b_index) - a->len / 2;
-	int b_dist = b_index - b->len / 2;
+	int a_index = find_place(a, b, b_index);
+	int a_dist = a_index - a->len * (a_index > a->len / 2);
+	int b_dist = b_index - b->len * (b_index > b->len / 2);
+	while (a_dist * b_dist > 0) {
+		score += score_only || perform_move(a, b, rr + 3 * (a_dist < 0));
+		a_dist += (a_dist < 0) - (a_dist > 0);
+		b_dist += (b_dist < 0) - (b_dist > 0);
+	}
 	while (a_dist != 0) {
-		score += !move || perform_move(a, b, a_dist > 0 ? ra : rra);
+		score += score_only || perform_move(a, b, ra + 3 * (a_dist < 0));
 		a_dist += (a_dist < 0) - (a_dist > 0);
 	}
 	while (b_dist != 0) {
-		score += !move || perform_move(a, b, b_dist > 0 ? rb : rrb);
+		score += score_only || perform_move(a, b, rb + 3 * (b_dist < 0));
 		b_dist += (b_dist < 0) - (b_dist > 0);
 	}
-#else
-	int rb_score = b_index;
-	int ra_score = find_place(a, b, b_index);
-	int rra_score = a->len - ra_score;
-	int rrb_score = b->len - rb_score;
-	if (ra_score < rra_score && rb_score < rrb_score)
-		while (ra_score > 0 && rb_score > 0) {
-			score += !move || perform_move(a, b, rr);
-			ra_score--;
-			rb_score--;
-		}
-	if (rra_score < ra_score && rrb_score < rb_score)
-		while (rra_score > 0 && rrb_score > 0) {
-			score += !move || perform_move(a, b, rrr);
-			rra_score--;
-			rrb_score--;
-		}
-	if (ra_score < rra_score)
-		while (ra_score-- > 0)
-			score += !move || perform_move(a, b, ra);
-	else
-		while (rra_score-- > 0)
-			score += !move || perform_move(a, b, rra);
-	if (rb_score < rrb_score)
-		while (rb_score-- > 0)
-			score += !move || perform_move(a, b, rb);
-	else
-		while (rrb_score-- > 0)
-			score += !move || perform_move(a, b, rrb);
-#endif
-	return score + (!move || perform_move(a, b, pa));
+	return score + (score_only || perform_move(a, b, pa));
 }
 
 int get_index_of_best_move(t_stack *a, t_stack *b)
@@ -197,7 +172,7 @@ int get_index_of_best_move(t_stack *a, t_stack *b)
 	int best_index;
 	int best_score = INT_MAX;
 	for (int index = 0; index < b->len; index++) {
-		int score = move_number(a, b, index, 0);
+		int score = move_number(a, b, index, 1);
 		if (score <= best_score) {
 			best_score = score;
 			best_index = index;
@@ -223,10 +198,10 @@ void rotate_to_top(t_stack *a, t_stack *b, int index)
 
 void sort(t_stack *a, t_stack *b)
 {
-	const int length = a->len;
+	const int half = a->len / 2;
 	while (a->len > 1) {
 		int value = stack_get(a, 0);
-		if (value < length / 2)
+		if (value < half)
 			perform_move(a, b, pb);
 		else {
 			perform_move(a, b, pb);
@@ -235,7 +210,7 @@ void sort(t_stack *a, t_stack *b)
 	}
 	while (b->len > 0) {
 		int b_index = get_index_of_best_move(a, b);
-		move_number(a, b, b_index, 1);
+		move_number(a, b, b_index, 0);
 	}
 	rotate_to_top(a, b, find_index_of_min_value(a));
 }
