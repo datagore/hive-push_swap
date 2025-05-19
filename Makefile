@@ -11,5 +11,4 @@ $(NAME): main.c
 clean:
 	$(RM) $(NAME)
 
-.SILENT:
 .PHONY: clean run

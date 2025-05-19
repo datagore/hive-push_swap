@@ -90,7 +90,7 @@ void print_move(int move_id)
 		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
 		"rrb\n", "rrr\n"
 	};
-#if 0
+#if 1
 	write(1, move_names[move_id], 3 + (move_id >= rra));
 #else
 	(void) move_names, (void) move_id;
@@ -147,13 +147,13 @@ int find_place(t_stack *a, t_stack *b, int b_index)
 	// TODO: Use binary search somehow.
 	int b_value = stack_get(b, b_index);
 	int a_index = find_index_of_min_value(a);
-	for (int i = 0; i < a->len && stack_get(a, a_index) < b_value; i++, a_index++);
-	return a_index % a->len;
+	for (int i = 0; i < a->len && stack_get(a, a_index) < b_value; i++)
+		a_index = (a_index + 1) % a->len;
+	return a_index;
 }
 
 int move_number(t_stack *a, t_stack *b, int b_index, int move)
 {
-	/*
 	int rb_score = b_index;
 	int ra_score = find_place(a, b, b_index);
 	int rra_score = a->len - ra_score;
@@ -169,18 +169,6 @@ int move_number(t_stack *a, t_stack *b, int b_index, int move)
 		for (int i = 0; rb_score > rrb_score && i < rrb_score; i++)
 			perform_move(a, b, rrb);
 	}
-	*/
-	int score = 0;
-	int a_index = find_place(a, b, b_index);
-	printf("Move b(%d) before a(%d):\n", stack_get(b, b_index), stack_get(a, a_index));
-	printf("    "); stack_print(a);
-	printf("    "); stack_print(b);
-	for (int i = 0; i < a_index; i++, score++)
-		if (move)
-			perform_move(a, b, ra);
-	for (int i = 0; i < b_index; i++, score++)
-		if (move)
-			perform_move(a, b, rb);
 	if (move)
 		perform_move(a, b, pa);
 	return score;
@@ -220,28 +208,24 @@ void rotate_to_index(t_stack *a, t_stack *b, int index)
 
 void sort(t_stack *a, t_stack *b)
 {
-	const int length = a->len;
 	while (a->len > 2)
 		perform_move(a, b, pb);
 	if (stack_get(a, 0) > stack_get(a, 1))
 		perform_move(a, b, sa);
-#if 1
 	while (b->len > 0) {
-		// int b_index = get_index_of_best_move(a, b);
-		int b_index = 0;
+		int b_index = get_index_of_best_move(a, b);
 		move_number(a, b, b_index, 1);
 	}
-#else
-	for (int i = length - 1; i >= 0; i--) {
-		rotate_to_index(a, b, get_index_of_value(b, i));
-		perform_move(a, b, pa);
-	}
-#endif
 }
 
 int main(void)
 {
-	const int length = 11;
+#if 1
+	srand(time(NULL));
+	rand();
+#endif
+
+	const int length = 100;
 	int array[length * 4];
 	random_permutation(array, length);
 
@@ -253,18 +237,13 @@ int main(void)
 		stacks[i].top = 0;
 	}
 
-#if 0
-	for (int i = 0; i < length / 2; i++)
-		perform_move(&stacks[0], &stacks[1], pb);
-#endif
-
 	printf(ANSI_CLEAR);
 	printf("Input:\n");
-	fflush(stdout);
 	stack_print(&stacks[0]);
 	stack_print(&stacks[1]);
+	printf("\n");
+	fflush(stdout);
 	sort(&stacks[0], &stacks[1]);
-	// printf("\nFound: %d\n", find_place(&stacks[0], &stacks[1], 0));
 	printf("\nOutput:\n");
 	stack_print(&stacks[0]);
 	stack_print(&stacks[1]);
