@@ -5,26 +5,22 @@
 #include <time.h>
 #include <unistd.h>
 
-// ANSI escape codes.
-#define ANSI_GREEN  "\x1b[1;32m" // Set the text color to green.
-#define ANSI_RED    "\x1b[1;31m" // Set the text color to red.
-#define ANSI_RESET  "\x1b[0m"    // Reset to default color.
-#define ANSI_CLEAR  "\x1b[2J"    // Clear the screen.
+enum {sa, sb, ss, pa, pb, ra, rb, rr, rra, rrb, rrr};
 
-// Color-coded OK and KO strings.
-#define GREEN_OK (ANSI_GREEN "[OK]" ANSI_RESET)
-#define RED_KO   (ANSI_RED   "[KO]" ANSI_RESET)
+static int move_count;
 
-void random_permutation(int *array, int length)
+void print_move(int move_id)
 {
-	for (int i = 0; i < length; i++)
-		array[i] = i;
-	for (int i = 0; i < length - 1; i++) {
-		int j = rand() % (length - i) + i;
-		int temporary = array[j];
-		array[j] = array[i];
-		array[i] = temporary;
-	}
+	static const char* const move_names[] = {
+		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
+		"rrb\n", "rrr\n"
+	};
+#if 0
+	write(1, move_names[move_id], 3 + (move_id >= rra));
+#else
+	(void) move_names, (void) move_id;
+#endif
+	move_count++;
 }
 
 typedef struct s_stack {
@@ -74,30 +70,6 @@ void stack_rotate(t_stack *s, int step)
 		stack_set(s, 0, stack_get(s, s->len));
 }
 
-void stack_print(const t_stack *s)
-{
-	for (int i = 0; i < s->len; i++)
-		printf("%s%d", i ? " " : "", stack_get(s, i));
-	printf("\n");
-}
-
-enum {sa, sb, ss, pa, pb, ra, rb, rr, rra, rrb, rrr};
-
-void print_move(int move_id)
-{
-	static const char* const move_names[] = {
-		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
-		"rrb\n", "rrr\n"
-	};
-#if 0
-	write(1, move_names[move_id], 3 + (move_id >= rra));
-#else
-	(void) move_names, (void) move_id;
-#endif
-}
-
-static int move_count;
-
 int perform_move(t_stack *a, t_stack *b, int move)
 {
 	print_move(move);
@@ -117,32 +89,43 @@ int perform_move(t_stack *a, t_stack *b, int move)
 		stack_rotate(a, +1);
 	if (move == rrb || move == rrr)
 		stack_rotate(b, +1);
-	move_count++;
 	return (1);
 }
 
 int find_index_of_min_value(t_stack *a)
 {
-	int min_index = 0;
-	int min_value = INT_MAX;
-	for (int index = 0; index < a->len; index++) {
-		int value = stack_get(a, index);
-		if (value < min_value) {
-			min_value = value;
-			min_index = index;
-		}
+	int lo = 0, hi = a->len - 1;
+	while (1) {
+		int mid = (lo + hi) / 2;
+		int value = stack_get(a, mid);
+		if (stack_get(a, lo) > value) { hi = mid - 0; continue; }
+		if (stack_get(a, hi) < value) { lo = mid + 1; continue; }
+		return lo;
 	}
-	return min_index;
 }
 
 int find_place(t_stack *a, t_stack *b, int b_index)
 {
 	// TODO: Use binary search somehow.
+#if 0
+	int base = find_index_of_min_value(a);
+	int b_value = stack_get(b, b_index);
+	int lo = 0, hi = a->len - 1;
+	while (lo <= hi) {
+		int mid = (lo + hi) / 2;
+		int a_value = stack_get(a, base + mid);
+		if (b_value > a_value) { hi = mid - 1; continue; }
+		if (b_value < a_value) { lo = mid + 1; continue; }
+		return mid;
+	}
+	return lo;
+#else
 	int b_value = stack_get(b, b_index);
 	int a_index = find_index_of_min_value(a);
 	for (int i = 0; i < a->len && stack_get(a, a_index) < b_value; i++)
 		a_index = (a_index + 1) % a->len;
 	return a_index;
+#endif
 }
 
 int move_number(t_stack *a, t_stack *b, int b_index, int score_only)
@@ -215,12 +198,47 @@ void sort(t_stack *a, t_stack *b)
 	rotate_to_top(a, b, find_index_of_min_value(a));
 }
 
-int stack_is_sorted(const t_stack *stack)
+////////////////////////////////////////////////////////////////////////////////
+//
+// TEST CODE BELOW
+//
+////////////////////////////////////////////////////////////////////////////////
+
+// ANSI escape codes.
+#define ANSI_GREEN  "\x1b[1;32m" // Set the text color to green.
+#define ANSI_RED    "\x1b[1;31m" // Set the text color to red.
+#define ANSI_RESET  "\x1b[0m"    // Reset to default color.
+#define ANSI_CLEAR  "\x1b[2J"    // Clear the screen.
+
+// Color-coded OK and KO strings.
+#define GREEN_OK (ANSI_GREEN "[OK]" ANSI_RESET)
+#define RED_KO   (ANSI_RED   "[KO]" ANSI_RESET)
+
+static int stack_is_sorted(const t_stack *stack)
 {
 	for (int i = 0; i < stack->len - 1; i++)
 		if (stack_get(stack, i) >= stack_get(stack, i + 1))
 			return 0;
 	return 1;
+}
+
+static void stack_randomize(int *array, int length)
+{
+	for (int i = 0; i < length; i++)
+		array[i] = i;
+	for (int i = 0; i < length - 1; i++) {
+		int j = rand() % (length - i) + i;
+		int temporary = array[j];
+		array[j] = array[i];
+		array[i] = temporary;
+	}
+}
+
+static void stack_print(const t_stack *s)
+{
+	for (int i = 0; i < s->len; i++)
+		printf("%s%d", i ? " " : "", stack_get(s, i));
+	printf("\n");
 }
 
 int main(void)
@@ -231,7 +249,7 @@ int main(void)
 	// TODO: Use minimal sequence for 3 and 5.
 	const int length = 500;
 	int array[length * 4];
-	random_permutation(array, length);
+	stack_randomize(array, length);
 
 	t_stack stacks[2];
 	for (int i = 0; i < 2; i++) {
