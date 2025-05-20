@@ -5,41 +5,41 @@
 #include <time.h>
 #include <unistd.h>
 
-enum
-{
-	sa,
-	sb,
-	ss,
-	pa,
-	pb,
-	ra,
-	rb,
-	rr,
-	rra,
-	rrb,
-	rrr
-};
-
-static int move_count;
-
-void	print_move(int move_id)
-{
-	static const char *const	move_names[] = {
-		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
-		"rrb\n", "rrr\n"
+	enum
+	{
+		sa,
+		sb,
+		ss,
+		pa,
+		pb,
+		ra,
+		rb,
+		rr,
+		rra,
+		rrb,
+		rrr
 	};
 
-#if 0
-	write(1, move_names[move_id], 3 + (move_id >= rra));
-#else
-	(void) move_names, (void) move_id;
-#endif
-	move_count++;
-}
+	static int move_count;
 
-typedef struct s_stack
-{
-	int	*data;
+	void	print_move(int move_id)
+	{
+		static const char *const	move_names[] = {
+			"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
+			"rrb\n", "rrr\n"
+		};
+
+#if 0
+		write(1, move_names[move_id], 3 + (move_id >= rra));
+#else
+		(void) move_names, (void) move_id;
+#endif
+		move_count++;
+	}
+
+	typedef struct s_stack
+	{
+		int	*data;
 	int	capacity;
 	int	length;
 	int	top;
@@ -224,6 +224,109 @@ void	sort(t_stack *a, t_stack *b)
 		make_move(a, b, ra + 3 * (index_of_zero > midpoint));
 }
 
+void error(int *array)
+{
+	(void) array;
+	// free(array); // FIXME
+	write(2, "Error\n", 6);
+	exit(1);
+}
+
+void	parse_int(int *array, int index, const char *str)
+{
+	long	sign;
+	long	value;
+
+	sign = 1;
+	value = 0;
+	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+		str++;
+	if (*str == '-' || *str == '+')
+		sign = (*str++ == '+') * 2 - 1;
+	if (*str < '0' || *str > '9')
+		error(array);
+	while (*str >= '0' && *str <= '9')
+		value = value * 10 + (*str - '0');
+	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+		str++;
+	value *= sign;
+	if (*str != '\0' || value < INT_MIN || value > INT_MAX)
+		error(array);
+	array[index] = value;
+}
+
+void sort_array(int *array, int length)
+{
+	int	pivot;
+	int	split;
+	int	temp;
+	int	i;
+
+	if (length < 2)
+		return;
+	i = -1;
+	split = 0;
+	pivot = array[length - 1];
+	while (++i < length)
+		if (array[i] <= pivot)
+		{
+			temp = array[i];
+			array[i] = array[split];
+			array[split++] = temp;
+		}
+	sort_array(array, split - 1);
+	sort_array(array + split, length - split);
+}
+
+void	check_for_duplicates(int *numbers, int length)
+{
+	int	i;
+	int	*copy;
+
+	i = 0;
+	copy = numbers + length;
+	while (i < length)
+	{
+		copy[i] = numbers[i];
+		i++;
+	}
+	sort_array(copy, length);
+	i = 0;
+	while (i < length - 1)
+	{
+		if (copy[i] == copy[i + 1])
+			error(numbers);
+		i++;
+	}
+}
+
+void	rank_numbers(int *numbers, const int *sorted, int length)
+{
+	int	i;
+	int	lo;
+	int	hi;
+	int	mid;
+
+	i = 0;
+	while (i < length)
+	{
+		lo = 0;
+		hi = length - 1;
+		while (1)
+		{
+			mid = (lo + hi) / 2;
+			if (numbers[i] < sorted[mid])
+				hi = mid - 1;
+			else if (numbers[i] > sorted[mid])
+				lo = mid + 1;
+			else
+				break;
+		}
+		numbers[i] = mid;
+		i++;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 // TEST CODE BELOW
@@ -248,10 +351,10 @@ static int stack_is_sorted(const t_stack *stack)
 	return 1;
 }
 
-static void stack_randomize(int *array, int length)
+static void random_array(int *array, int length)
 {
 	for (int i = 0; i < length; i++)
-		array[i] = i;
+		array[i] = i - length / 2;
 	for (int i = 0; i < length - 1; i++) {
 		int j = rand() % (length - i) + i;
 		int temporary = array[j];
@@ -267,58 +370,6 @@ static void stack_print(const t_stack *s)
 	printf("\n");
 }
 
-void error(int *array)
-{
-	free(array);
-	write(2, "Error\n", 6);
-	exit(1);
-}
-
-void	parse_int(int *array, int index, const char *string)
-{
-	long	sign;
-	long	value;
-
-	sign = 1;
-	value = 0;
-	while (*string == ' ' || (*string >= '\r' && *string <= '\t'))
-		string++;
-	if (*string == '-' || *string == '+')
-		sign = (*string++ == '+') * 2 - 1;
-	if (*string < '0' || *string > '9')
-		error(array);
-	while (*string >= '0' && *string <= '9')
-		value = value * 10 + (*string - '0');
-	while (*string == ' ' || (*string >= '\r' && *string <= '\t'))
-		string++;
-	value *= sign;
-	if (*string != '\0' || value < INT_MIN || value > INT_MAX)
-		error(array);
-	array[index] = value;
-}
-
-void sort_array(int *array, int length)
-{
-	const int	pivot = array[length - 1];
-	int			split;
-	int			temp;
-	int			i;
-
-	if (length < 2)
-		return;
-	i = -1;
-	split = 0;
-	while (i++ < length)
-		if (array[i] <= pivot)
-		{
-			temp = array[i];
-			array[i] = array[split];
-			array[split++] = temp;
-		}
-	sort_array(array, split - 1);
-	sort_array(array + split, length - split);
-}
-
 int main(void)
 {
 	srand(time(NULL));
@@ -327,7 +378,9 @@ int main(void)
 	// TODO: Use minimal sequence for 3 and 5.
 	const int length = 500;
 	int array[length * 4];
-	stack_randomize(array, length);
+	random_array(array, length);
+	check_for_duplicates(array, length);
+	rank_numbers(array, array + length, length);
 
 	t_stack stacks[2];
 	for (int i = 0; i < 2; i++) {
