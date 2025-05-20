@@ -16,11 +16,7 @@ void	print_move(int move_id)
 		"rrb\n", "rrr\n"
 	};
 
-#if 0
 	write(1, move_names[move_id], 3 + (move_id >= rra));
-#else
-	(void) move_names, (void) move_id;
-#endif
 	move_count++;
 }
 
@@ -163,8 +159,7 @@ void	sort(t_stack *a, t_stack *b)
 
 void error(int *array)
 {
-	(void) array;
-	// free(array); // FIXME
+	free(array);
 	write(2, "Error\n", 6);
 	exit(1);
 }
@@ -183,7 +178,7 @@ void	parse_int(int *array, int index, const char *str)
 	if (*str < '0' || *str > '9')
 		error(array);
 	while (*str >= '0' && *str <= '9')
-		value = value * 10 + (*str - '0');
+		value = value * 10 + (*str++ - '0');
 	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
 		str++;
 	value *= sign;
@@ -264,59 +259,19 @@ void	rank_numbers(int *numbers, const int *sorted, int length)
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//
-// TEST CODE BELOW
-//
-////////////////////////////////////////////////////////////////////////////////
-
-// ANSI escape codes.
-#define ANSI_GREEN  "\x1b[1;32m" // Set the text color to green.
-#define ANSI_RED    "\x1b[1;31m" // Set the text color to red.
-#define ANSI_RESET  "\x1b[0m"    // Reset to default color.
-#define ANSI_CLEAR  "\x1b[2J"    // Clear the screen.
-
-// Color-coded OK and KO strings.
-#define GREEN_OK (ANSI_GREEN "[OK]" ANSI_RESET)
-#define RED_KO   (ANSI_RED   "[KO]" ANSI_RESET)
-
-static int stack_is_sorted(const t_stack *stack)
+int	main(int argc, char **argv)
 {
-	for (int i = 0; i < stack->length - 1; i++)
-		if (stack_get(stack, i) >= stack_get(stack, i + 1))
-			return 0;
-	return 1;
-}
-
-static void random_array(int *array, int length)
-{
-	for (int i = 0; i < length; i++)
-		array[i] = i - length / 2;
-	for (int i = 0; i < length - 1; i++) {
-		int j = rand() % (length - i) + i;
-		int temporary = array[j];
-		array[j] = array[i];
-		array[i] = temporary;
-	}
-}
-
-static void stack_print(const t_stack *s)
-{
-	for (int i = 0; i < s->length; i++)
-		printf("%s%d", i ? " " : "", stack_get(s, i));
-	printf("\n");
-}
-
-int main(void)
-{
-	unsigned int rng_seed = time(NULL);
-	srand(rng_seed);
-	rand();
-
 	// TODO: Use minimal sequence for 3 and 5.
-	const int length = 500;
-	int array[length * 4];
-	random_array(array, length);
+	const int	length = argc - 1;
+	int			*array;
+
+	if (length < 1)
+		error(NULL);
+	array = malloc(length * 4 * sizeof(int));
+	if (array == NULL)
+		error(NULL);
+	for (int i =  0; i < length; i++)
+		parse_int(array, i, argv[i + 1]);
 	check_for_duplicates(array, length);
 	rank_numbers(array, array + length, length);
 
@@ -327,21 +282,6 @@ int main(void)
 		stacks[i].capacity = length * 2;
 		stacks[i].top = 0;
 	}
-
-	printf(ANSI_CLEAR);
-	printf("RNG seed: %u\n\n", rng_seed);
-	printf("Input:\n");
-	stack_print(&stacks[0]);
-	stack_print(&stacks[1]);
-	printf("\n");
-	fflush(stdout);
 	sort(&stacks[0], &stacks[1]);
-	printf("\nOutput:\n");
-	stack_print(&stacks[0]);
-	stack_print(&stacks[1]);
-
-	int sorted = stack_is_sorted(&stacks[0]);
-	printf("\n%s ", move_count < 5500 ? GREEN_OK : RED_KO);
-	printf("%d moves\n", move_count);
-	printf("%s %ssorted\n", sorted ? GREEN_OK : RED_KO, sorted ? "" : "not ");
+	free(array);
 }

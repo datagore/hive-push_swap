@@ -1,5 +1,5 @@
 push_swap
-checker
+checker_linux
 a.out
 *.o
 *.d
