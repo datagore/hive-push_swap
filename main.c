@@ -267,6 +267,58 @@ static void stack_print(const t_stack *s)
 	printf("\n");
 }
 
+void error(int *array)
+{
+	free(array);
+	write(2, "Error\n", 6);
+	exit(1);
+}
+
+void	parse_int(int *array, int index, const char *string)
+{
+	long	sign;
+	long	value;
+
+	sign = 1;
+	value = 0;
+	while (*string == ' ' || (*string >= '\r' && *string <= '\t'))
+		string++;
+	if (*string == '-' || *string == '+')
+		sign = (*string++ == '+') * 2 - 1;
+	if (*string < '0' || *string > '9')
+		error(array);
+	while (*string >= '0' && *string <= '9')
+		value = value * 10 + (*string - '0');
+	while (*string == ' ' || (*string >= '\r' && *string <= '\t'))
+		string++;
+	value *= sign;
+	if (*string != '\0' || value < INT_MIN || value > INT_MAX)
+		error(array);
+	array[index] = value;
+}
+
+void sort_array(int *array, int length)
+{
+	const int	pivot = array[length - 1];
+	int			split;
+	int			temp;
+	int			i;
+
+	if (length < 2)
+		return;
+	i = -1;
+	split = 0;
+	while (i++ < length)
+		if (array[i] <= pivot)
+		{
+			temp = array[i];
+			array[i] = array[split];
+			array[split++] = temp;
+		}
+	sort_array(array, split - 1);
+	sort_array(array + split, length - split);
+}
+
 int main(void)
 {
 	srand(time(NULL));
