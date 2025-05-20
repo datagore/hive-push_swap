@@ -1,14 +1,22 @@
-NAME := test
-CFLAGS := -Wall -Wextra -Wpedantic -O0 -ggdb3 \
-	-fsanitize=address -fsanitize=undefined -fsanitize=leak
+NAME := push_swap
+SRC := main.c stack.c
+OBJ := $(SRC:.c=.o)
+DEP := $(SRC:.c=.d)
+CFLAGS := -Wall -Wextra -Wpedantic -MMD -MP
 
-run: $(NAME)
-	./$(NAME)
+$(NAME): $(OBJ)
+	$(CC) $^ -o $@
 
-$(NAME): main.c
-	$(CC) $^ -o $@ $(CFLAGS)
+all: $(NAME)
 
 clean:
+	$(RM) $(OBJ) $(DEP)
+
+fclean: clean
 	$(RM) $(NAME)
 
-.PHONY: clean run
+re: fclean all
+
+.PHONY: all clean fclean re run
+
+-include $(DEP)

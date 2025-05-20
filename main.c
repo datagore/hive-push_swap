@@ -5,20 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 
-enum
-{
-	sa,
-	sb,
-	ss,
-	pa,
-	pb,
-	ra,
-	rb,
-	rr,
-	rra,
-	rrb,
-	rrr
-};
+#include "common.h"
 
 static int move_count;
 
@@ -35,52 +22,6 @@ void	print_move(int move_id)
 	(void) move_names, (void) move_id;
 #endif
 	move_count++;
-}
-
-typedef struct s_stack
-{
-	int	*data;
-	int	capacity;
-	int	length;
-	int	top;
-}	t_stack;
-
-int	stack_get(const t_stack *s, int index)
-{
-	return (s->data[(s->top + index) % s->capacity]);
-}
-
-void	stack_push(t_stack *dst, t_stack *src)
-{
-	const int	value = src->data[src->top];
-
-	if (src->length == 0)
-		return ;
-	src->top = (src->top + 1 + dst->capacity) % src->capacity;
-	dst->top = (dst->top - 1 + dst->capacity) % dst->capacity;
-	dst->data[dst->top] = value;
-	dst->length++;
-	src->length--;
-}
-
-void	stack_swap(t_stack *s)
-{
-	const int	next = (s->top + 1) % s->capacity;
-	const int	temp = s->data[s->top];
-
-	if (s->length == 0)
-		return ;
-	s->data[s->top] = s->data[next];
-	s->data[next] = temp;
-}
-
-void	stack_rotate(t_stack *s, int step)
-{
-	if (step == -1)
-		s->data[(s->top + s->length) % s->capacity] = stack_get(s, 0);
-	s->top = (s->top - step + s->capacity) % s->capacity;
-	if (step == +1)
-		s->data[s->top] = stack_get(s, s->length);
 }
 
 int	make_move(t_stack *a, t_stack *b, int move)
@@ -204,19 +145,15 @@ void	sort(t_stack *a, t_stack *b)
 {
 	const int	midpoint = a->length / 2;
 	int			index_of_zero;
-	int			value;
 
 	while (a->length > 1)
-	{
-		value = stack_get(a, 0);
-		if (value < midpoint)
+		if (stack_get(a, 0) < midpoint)
 			make_move(a, b, pb);
 		else
 		{
 			make_move(a, b, pb);
 			make_move(a, b, rb);
 		}
-	}
 	while (b->length > 0)
 		move_number(a, b, find_best_candidate(a, b), 0);
 	index_of_zero = find_index_of_min_value(a);
@@ -372,7 +309,8 @@ static void stack_print(const t_stack *s)
 
 int main(void)
 {
-	srand(time(NULL));
+	unsigned int rng_seed = time(NULL);
+	srand(rng_seed);
 	rand();
 
 	// TODO: Use minimal sequence for 3 and 5.
@@ -391,6 +329,7 @@ int main(void)
 	}
 
 	printf(ANSI_CLEAR);
+	printf("RNG seed: %u\n\n", rng_seed);
 	printf("Input:\n");
 	stack_print(&stacks[0]);
 	stack_print(&stacks[1]);
