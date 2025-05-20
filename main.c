@@ -6,15 +6,12 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/20 15:41:42 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/20 19:03:39 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "common.h"
