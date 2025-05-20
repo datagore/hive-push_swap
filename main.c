@@ -5,41 +5,41 @@
 #include <time.h>
 #include <unistd.h>
 
-	enum
-	{
-		sa,
-		sb,
-		ss,
-		pa,
-		pb,
-		ra,
-		rb,
-		rr,
-		rra,
-		rrb,
-		rrr
+enum
+{
+	sa,
+	sb,
+	ss,
+	pa,
+	pb,
+	ra,
+	rb,
+	rr,
+	rra,
+	rrb,
+	rrr
+};
+
+static int move_count;
+
+void	print_move(int move_id)
+{
+	static const char *const	move_names[] = {
+		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
+		"rrb\n", "rrr\n"
 	};
 
-	static int move_count;
-
-	void	print_move(int move_id)
-	{
-		static const char *const	move_names[] = {
-			"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
-			"rrb\n", "rrr\n"
-		};
-
 #if 0
-		write(1, move_names[move_id], 3 + (move_id >= rra));
+	write(1, move_names[move_id], 3 + (move_id >= rra));
 #else
-		(void) move_names, (void) move_id;
+	(void) move_names, (void) move_id;
 #endif
-		move_count++;
-	}
+	move_count++;
+}
 
-	typedef struct s_stack
-	{
-		int	*data;
+typedef struct s_stack
+{
+	int	*data;
 	int	capacity;
 	int	length;
 	int	top;
