@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/20 19:03:39 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/21 10:30:34 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,18 +16,15 @@
 
 #include "common.h"
 
-void	print_move(int move_id)
-{
-	static const char *const	move_names[] = {
-		"sa\n", "sb\n", "ss\n", "pa\n", "pb\n", "ra\n", "rb\n", "rr\n", "rra\n",
-		"rrb\n", "rrr\n"
-	};
-
-	write(1, move_names[move_id], 3 + (move_id >= rra));
-}
-
 int	make_move(t_stack *a, t_stack *b, int move)
 {
+	static const char *const	move_names[] = {
+		"sa\n", "sb\n", "ss\n",
+		"pa\n", "pb\n",
+		"ra\n", "rb\n", "rr\n",
+		"rra\n", "rrb\n", "rrr\n"
+	};
+
 	if (move == pa)
 		stack_push(a, b);
 	if (move == pb)
@@ -44,7 +41,7 @@ int	make_move(t_stack *a, t_stack *b, int move)
 		stack_rotate(a, +1);
 	if (move == rrb || move == rrr)
 		stack_rotate(b, +1);
-	print_move(move);
+	write(1, move_names[move], 3 + (move >= rra));
 	return (1);
 }
 
