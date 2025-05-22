@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 09:44:46 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 11:55:27 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 #include "common.h"
 
-int	make_move(t_stack *a, t_stack *b, int move)
+void	make_move(t_stack *a, t_stack *b, int move)
 {
 	static const char *const	move_names[] = {
 		"sa\n", "sb\n", "ss\n",
@@ -42,7 +42,6 @@ int	make_move(t_stack *a, t_stack *b, int move)
 	if (move == rrb || move == rrr)
 		stack_rotate(b, +1);
 	write(1, move_names[move], 3 + (move >= rra));
-	return (1);
 }
 
 int	find_index_of_min_value(t_stack *a)
@@ -89,53 +88,74 @@ int	find_target_index(t_stack *stack, int value)
 	return ((base + hi + stack->length) % stack->length);
 }
 
-int	move_number(t_stack *a, t_stack *b, int b_index, int score_only)
+int	min(int x, int y)
 {
-	const int	a_index = find_target_index(a, stack_get(b, b_index));
-	int			score;
+	if (x < y)
+		return (x);
+	else
+		return (y);
+}
+
+int	abs(int x)
+{
+	if (x < 0)
+		return (-x);
+	return (x);
+}
+
+int	get_score(t_stack *a, t_stack *b, int a_index, int b_index)
+{
+	const int	ad = a_index - a->length * (a_index > a->length / 2);
+	const int	bd = b_index - b->length * (b_index > b->length / 2);
+
+	return (abs(ad) + abs(bd) - (ad * bd > 0) * min(abs(ad), abs(bd)));
+}
+
+void	align_stacks(t_stack *a, t_stack *b, int a_index, int b_index)
+{
 	int			a_dist;
 	int			b_dist;
 
-	score = 0;
 	a_dist = a_index - a->length * (a_index > a->length / 2);
 	b_dist = b_index - b->length * (b_index > b->length / 2);
 	while (a_dist * b_dist > 0)
 	{
-		score += score_only || make_move(a, b, rr + 3 * (a_dist < 0));
+		make_move(a, b, rr + 3 * (a_dist < 0));
 		a_dist += (a_dist < 0) - (a_dist > 0);
 		b_dist += (b_dist < 0) - (b_dist > 0);
 	}
 	while (a_dist != 0)
 	{
-		score += score_only || make_move(a, b, ra + 3 * (a_dist < 0));
+		make_move(a, b, ra + 3 * (a_dist < 0));
 		a_dist += (a_dist < 0) - (a_dist > 0);
 	}
 	while (b_dist != 0)
 	{
-		score += score_only || make_move(a, b, rb + 3 * (b_dist < 0));
+		make_move(a, b, rb + 3 * (b_dist < 0));
 		b_dist += (b_dist < 0) - (b_dist > 0);
 	}
-	return (score + (score_only || make_move(a, b, pa)));
 }
 
 int	find_best_candidate(t_stack *a, t_stack *b)
 {
 	int	best_index;
 	int	best_score;
-	int	index;
+	int	a_index;
+	int	b_index;
 	int	score;
 
-	index = 0;
+	b_index = 0;
 	best_score = INT_MAX;
-	while (index < b->length)
+	while (b_index < b->length)
 	{
-		score = move_number(a, b, index, 1);
+		a_index = find_target_index(a, stack_get(b, b_index));
+		score = get_score(a, b, a_index, b_index);
 		if (score <= best_score)
 		{
 			best_score = score;
-			best_index = index;
+			best_index = b_index;
 		}
-		index++;
+		b_index++;
 	}
 	return (best_index);
 }
@@ -144,6 +164,8 @@ void	sort(t_stack *a, t_stack *b)
 {
 	const int	midpoint = a->length / 2;
 	int			index_of_zero;
+	int			a_index;
+	int			b_index;
 
 	while (a->length > 1)
 	{
@@ -156,7 +178,12 @@ void	sort(t_stack *a, t_stack *b)
 		}
 	}
 	while (b->length > 0)
-		move_number(a, b, find_best_candidate(a, b), 0);
+	{
+		b_index = find_best_candidate(a, b);
+		a_index = find_target_index(a, stack_get(b, b_index));
+		align_stacks(a, b, a_index, b_index);
+		make_move(a, b, pa);
+	}
 	index_of_zero = find_index_of_min_value(a);
 	while (stack_get(a, 0) != 0)
 		make_move(a, b, ra + 3 * (index_of_zero > midpoint));
