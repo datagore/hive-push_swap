@@ -4,10 +4,10 @@ OBJ := $(SRC:.c=.o)
 DEP := $(SRC:.c=.d)
 CFLAGS := -Wall -Wextra -Werror -MMD -MP
 
+all: $(NAME)
+
 $(NAME): $(OBJ)
 	$(CC) $^ -o $@
-
-all: $(NAME)
 
 clean:
 	$(RM) $(OBJ) $(DEP)
