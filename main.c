@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/21 10:30:34 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 09:44:46 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -266,6 +266,37 @@ void	rank_numbers(int *numbers, const int *sorted, int length)
 		numbers[i] = mid;
 		i++;
 	}
+}
+
+int	find_longest_run(const int *array, int length)
+{
+	int	i;
+	int	longest_start;
+	int	longest_count;
+	int	current_start;
+	int	current_count;
+
+	i = 0;
+	longest_start = 0;
+	longest_count = 0;
+	current_start = 0;
+	current_count = 0;
+	while (i < length * 2)
+	{
+		if (array[i % length] < array[(i + length - 1) % length])
+		{
+			if (current_count > longest_count)
+			{
+				longest_count = current_count;
+				longest_start = current_start;
+			}
+			current_start = i;
+			current_count = 0;
+		}
+		current_count++;
+		i++;
+	}
+	return (longest_start % length);
 }
 
 int	main(int argc, char **argv)
