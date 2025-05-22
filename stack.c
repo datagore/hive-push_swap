@@ -6,11 +6,19 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 12:03:39 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/20 12:04:00 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 16:40:45 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "common.h"
+
+void	stack_init(t_stack *s, int *data, int length, int capacity)
+{
+	s->data = data;
+	s->length = length;
+	s->capacity = capacity;
+	s->top = 0;
+}
 
 int	stack_get(const t_stack *s, int index)
 {

@@ -1,5 +1,5 @@
 NAME := push_swap
-SRC := main.c stack.c
+SRC := main.c stack.c find.c sort.c
 OBJ := $(SRC:.c=.o)
 DEP := $(SRC:.c=.d)
 CFLAGS := -Wall -Wextra -Werror -MMD -MP

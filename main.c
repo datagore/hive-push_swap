@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 11:55:27 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 17:16:55 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,212 +16,36 @@
 
 #include "common.h"
 
-void	make_move(t_stack *a, t_stack *b, int move)
-{
-	static const char *const	move_names[] = {
-		"sa\n", "sb\n", "ss\n",
-		"pa\n", "pb\n",
-		"ra\n", "rb\n", "rr\n",
-		"rra\n", "rrb\n", "rrr\n"
-	};
-
-	if (move == pa)
-		stack_push(a, b);
-	if (move == pb)
-		stack_push(b, a);
-	if (move == sa || move == ss)
-		stack_swap(a);
-	if (move == sb || move == ss)
-		stack_swap(b);
-	if (move == ra || move == rr)
-		stack_rotate(a, -1);
-	if (move == rb || move == rr)
-		stack_rotate(b, -1);
-	if (move == rra || move == rrr)
-		stack_rotate(a, +1);
-	if (move == rrb || move == rrr)
-		stack_rotate(b, +1);
-	write(1, move_names[move], 3 + (move >= rra));
-}
-
-int	find_index_of_min_value(t_stack *a)
-{
-	int	lo;
-	int	hi;
-	int	mid_index;
-	int	mid_value;
-
-	lo = 0;
-	hi = a->length - 1;
-	while (1)
-	{
-		mid_index = (lo + hi) / 2;
-		mid_value = stack_get(a, mid_index);
-		if (stack_get(a, lo) > mid_value)
-			hi = mid_index;
-		else if (stack_get(a, hi) < mid_value)
-			lo = mid_index + 1;
-		else
-			return (lo);
-	}
-}
-
-int	find_target_index(t_stack *stack, int value)
-{
-	const int	base = find_index_of_min_value(stack);
-	int			mid_index;
-	int			mid_value;
-	int			lo;
-	int			hi;
-
-	lo = 0;
-	hi = stack->length;
-	while (lo < hi)
-	{
-		mid_index = (lo + hi) / 2;
-		mid_value = stack_get(stack, (base + mid_index) % stack->length);
-		if (mid_value > value)
-			hi = mid_index;
-		else
-			lo = mid_index + 1;
-	}
-	return ((base + hi + stack->length) % stack->length);
-}
-
-int	min(int x, int y)
-{
-	if (x < y)
-		return (x);
-	else
-		return (y);
-}
-
-int	abs(int x)
-{
-	if (x < 0)
-		return (-x);
-	return (x);
-}
-
-int	get_score(t_stack *a, t_stack *b, int a_index, int b_index)
-{
-	const int	ad = a_index - a->length * (a_index > a->length / 2);
-	const int	bd = b_index - b->length * (b_index > b->length / 2);
-
-	return (abs(ad) + abs(bd) - (ad * bd > 0) * min(abs(ad), abs(bd)));
-}
-
-void	align_stacks(t_stack *a, t_stack *b, int a_index, int b_index)
-{
-	int			a_dist;
-	int			b_dist;
-
-	a_dist = a_index - a->length * (a_index > a->length / 2);
-	b_dist = b_index - b->length * (b_index > b->length / 2);
-	while (a_dist * b_dist > 0)
-	{
-		make_move(a, b, rr + 3 * (a_dist < 0));
-		a_dist += (a_dist < 0) - (a_dist > 0);
-		b_dist += (b_dist < 0) - (b_dist > 0);
-	}
-	while (a_dist != 0)
-	{
-		make_move(a, b, ra + 3 * (a_dist < 0));
-		a_dist += (a_dist < 0) - (a_dist > 0);
-	}
-	while (b_dist != 0)
-	{
-		make_move(a, b, rb + 3 * (b_dist < 0));
-		b_dist += (b_dist < 0) - (b_dist > 0);
-	}
-}
-
-int	find_best_candidate(t_stack *a, t_stack *b)
-{
-	int	best_index;
-	int	best_score;
-	int	a_index;
-	int	b_index;
-	int	score;
-
-	b_index = 0;
-	best_score = INT_MAX;
-	while (b_index < b->length)
-	{
-		a_index = find_target_index(a, stack_get(b, b_index));
-		score = get_score(a, b, a_index, b_index);
-		if (score <= best_score)
-		{
-			best_score = score;
-			best_index = b_index;
-		}
-		b_index++;
-	}
-	return (best_index);
-}
-
-void	sort(t_stack *a, t_stack *b)
-{
-	const int	midpoint = a->length / 2;
-	int			index_of_zero;
-	int			a_index;
-	int			b_index;
-
-	while (a->length > 1)
-	{
-		if (stack_get(a, 0) < midpoint)
-			make_move(a, b, pb);
-		else
-		{
-			make_move(a, b, pb);
-			make_move(a, b, rb);
-		}
-	}
-	while (b->length > 0)
-	{
-		b_index = find_best_candidate(a, b);
-		a_index = find_target_index(a, stack_get(b, b_index));
-		align_stacks(a, b, a_index, b_index);
-		make_move(a, b, pa);
-	}
-	index_of_zero = find_index_of_min_value(a);
-	while (stack_get(a, 0) != 0)
-		make_move(a, b, ra + 3 * (index_of_zero > midpoint));
-}
-
-void	error(int *array)
-{
-	free(array);
-	write(2, "Error\n", 6);
-	exit(1);
-}
-
-void	parse_int(int *array, char **argv, int index)
+static int	read_input(int *array, char **strings, int length)
 {
 	char	*str;
 	long	sign;
 	long	value;
 
-	sign = 1;
-	value = 0;
-	str = argv[index + 1];
-	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
-		str++;
-	if (*str == '-' || *str == '+')
-		sign = (*str++ == '+') * 2 - 1;
-	if (*str < '0' || *str > '9')
-		error(array);
-	while (*str >= '0' && *str <= '9')
-		value = value * 10 + (*str++ - '0');
-	while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
-		str++;
-	value *= sign;
-	if (*str != '\0' || value < INT_MIN || value > INT_MAX)
-		error(array);
-	array[index] = value;
+	while (length-- > 0)
+	{
+		sign = 1;
+		value = 0;
+		str = strings[length];
+		while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+			str++;
+		if (*str == '-' || *str == '+')
+			sign = (*str++ == '+') * 2 - 1;
+		if (*str < '0' || *str > '9')
+			return (0);
+		while (*str >= '0' && *str <= '9')
+			value = value * 10 + (*str++ - '0');
+		while (*str == ' ' || (*str >= '\t' && *str <= '\r'))
+			str++;
+		value *= sign;
+		if (*str != '\0' || value < INT_MIN || value > INT_MAX)
+			return (0);
+		array[length] = value;
+	}
+	return (1);
 }
 
-void	sort_array(int *array, int length)
+static void	sort_array(int *array, int length)
 {
 	int	pivot;
 	int	split;
@@ -246,7 +70,7 @@ void	sort_array(int *array, int length)
 	sort_array(array + split, length - split);
 }
 
-void	check_for_duplicates(int *numbers, int length)
+static int	all_unique(int *numbers, int length)
 {
 	int	i;
 	int	*copy;
@@ -263,12 +87,13 @@ void	check_for_duplicates(int *numbers, int length)
 	while (i < length - 1)
 	{
 		if (copy[i] == copy[i + 1])
-			error(numbers);
+			return (0);
 		i++;
 	}
+	return (1);
 }
 
-void	rank_numbers(int *numbers, const int *sorted, int length)
+static void	rank_numbers(int *numbers, const int *sorted, int length)
 {
 	int	i;
 	int	lo;
@@ -295,63 +120,24 @@ void	rank_numbers(int *numbers, const int *sorted, int length)
 	}
 }
 
-int	find_longest_run(const int *array, int length)
-{
-	int	i;
-	int	longest_start;
-	int	longest_count;
-	int	current_start;
-	int	current_count;
-
-	i = 0;
-	longest_start = 0;
-	longest_count = 0;
-	current_start = 0;
-	current_count = 0;
-	while (i < length * 2)
-	{
-		if (array[i % length] < array[(i + length - 1) % length])
-		{
-			if (current_count > longest_count)
-			{
-				longest_count = current_count;
-				longest_start = current_start;
-			}
-			current_start = i;
-			current_count = 0;
-		}
-		current_count++;
-		i++;
-	}
-	return (longest_start % length);
-}
-
 int	main(int argc, char **argv)
 {
-	t_stack		stacks[2];
-	const int	length = argc - 1;
+	t_stack		a;
+	t_stack		b;
+	const int	len = argc - 1;
 	int			*array;
-	int			i;
 
-	if (length < 1)
+	if (len < 1)
 		return (0);
-	array = malloc(length * 4 * sizeof(int));
-	if (array == NULL)
-		error(NULL);
-	i = 0;
-	while (i < length)
-		parse_int(array, argv, i++);
-	check_for_duplicates(array, length);
-	rank_numbers(array, array + length, length);
-	i = 0;
-	while (i < 2)
+	array = malloc(len * 4 * sizeof(int));
+	if (array && read_input(array, argv + 1, len) && all_unique(array, len))
 	{
-		stacks[i].data = array + length * i * 2;
-		stacks[i].length = length * (1 - i);
-		stacks[i].capacity = length * 2;
-		stacks[i].top = 0;
-		i++;
+		rank_numbers(array, array + len, len);
+		stack_init(&a, array + len * 0, len * 1, len * 2);
+		stack_init(&b, array + len * 2, len * 0, len * 2);
+		push_swap_sort(&a, &b);
 	}
-	sort(&stacks[0], &stacks[1]);
+	else
+		write(2, "Error\n", 6);
 	free(array);
 }
