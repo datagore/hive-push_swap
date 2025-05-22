@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/22 17:16:51 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 17:19:58 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 17:27:01 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,8 +47,8 @@ void	rotate_stacks(t_stack *a, t_stack *b, int a_index, int b_index)
 	int	a_dist;
 	int	b_dist;
 
-	a_dist = a_index - a->length * (a_index > a->length / 2);
-	b_dist = b_index - b->length * (b_index > b->length / 2);
+	a_dist = a_index - a->len * (a_index > a->len / 2);
+	b_dist = b_index - b->len * (b_index > b->len / 2);
 	while (a_dist * b_dist > 0)
 	{
 		make_move(a, b, rr + 3 * (a_dist < 0));
@@ -94,13 +94,13 @@ static void	sort_three(t_stack *a, t_stack *b)
 
 void	push_swap_sort(t_stack *a, t_stack *b)
 {
-	const int	midpoint = a->length / 2;
+	const int	midpoint = a->len / 2;
 	int			to_push;
 	int			a_index;
 	int			b_index;
 
 	to_push = find_longest_run(a, b);
-	while (a->length > 3 && to_push-- > 0)
+	while (a->len > 3 && to_push-- > 0)
 	{
 		if (midpoint < 3 || stack_get(a, 0) < midpoint)
 			make_move(a, b, pb);
@@ -110,14 +110,13 @@ void	push_swap_sort(t_stack *a, t_stack *b)
 			make_move(a, b, rb);
 		}
 	}
-	if (a->length == 3)
+	if (a->len == 3)
 		sort_three(a, b);
-	while (b->length > 0)
+	while (b->len > 0)
 	{
 		b_index = find_best_candidate(a, b);
 		a_index = find_target_index(a, stack_get(b, b_index));
 		rotate_stacks(a, b, a_index, b_index);
 		make_move(a, b, pa);
 	}
-	rotate_stacks(a, b, find_index_of_min_value(a), 0);
 }

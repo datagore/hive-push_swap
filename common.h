@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 12:01:01 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 17:20:01 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 17:23:49 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,8 +31,8 @@ enum
 typedef struct s_stack
 {
 	int	*data;
-	int	capacity;
-	int	length;
+	int	cap;
+	int	len;
 	int	top;
 }	t_stack;
 

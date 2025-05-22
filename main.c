@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/20 15:35:59 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 17:16:55 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 17:27:12 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,6 +136,7 @@ int	main(int argc, char **argv)
 		stack_init(&a, array + len * 0, len * 1, len * 2);
 		stack_init(&b, array + len * 2, len * 0, len * 2);
 		push_swap_sort(&a, &b);
+		rotate_stacks(&a, &b, find_index_of_min_value(&a), 0);
 	}
 	else
 		write(2, "Error\n", 6);

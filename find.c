@@ -6,7 +6,7 @@
 /*   By: abostrom <abostrom@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/05/22 17:12:29 by abostrom          #+#    #+#             */
-/*   Updated: 2025/05/22 17:21:53 by abostrom         ###   ########.fr       */
+/*   Updated: 2025/05/22 17:54:36 by abostrom         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,23 +14,15 @@
 
 #include "common.h"
 
-static int	min(int x, int y)
+int	get_score(t_stack *a, t_stack *b, int a_index, int b_index)
 {
-	return (x * (x < y) + y * (y <= x));
-}
+	const int	ad = a_index - a->len * (a_index > a->len / 2);
+	const int	bd = b_index - b->len * (b_index > b->len / 2);
+	const int	as = ad * (ad > 0) - ad * (ad < 0);
+	const int	bs = bd * (bd > 0) - bd * (bd < 0);
+	const int	ab = as * (as < bs) + bs * (bs <= as);
 
-static int	abs(int x)
-{
-	return (-min(x, -x));
-}
-
-static int	get_score(t_stack *a, t_stack *b, int a_index, int b_index)
-{
-	const int	aa = a_index - a->length * (a_index > a->length / 2);
-	const int	bb = b_index - b->length * (b_index > b->length / 2);
-	const int	ab = (aa * bb > 0) * min(abs(aa), abs(bb));
-
-	return (abs(aa) + abs(bb) - ab);
+	return (as + bs - (ad * bd > 0) * ab);
 }
 
 int	find_index_of_min_value(t_stack *a)
@@ -41,7 +33,7 @@ int	find_index_of_min_value(t_stack *a)
 	int	mid_value;
 
 	lo = 0;
-	hi = a->length - 1;
+	hi = a->len - 1;
 	while (1)
 	{
 		mid_index = (lo + hi) / 2;
@@ -64,17 +56,17 @@ int	find_target_index(t_stack *stack, int value)
 	int			hi;
 
 	lo = 0;
-	hi = stack->length;
+	hi = stack->len;
 	while (lo < hi)
 	{
 		mid_index = (lo + hi) / 2;
-		mid_value = stack_get(stack, (base + mid_index) % stack->length);
+		mid_value = stack_get(stack, (base + mid_index) % stack->len);
 		if (mid_value > value)
 			hi = mid_index;
 		else
 			lo = mid_index + 1;
 	}
-	return ((base + hi + stack->length) % stack->length);
+	return ((base + hi + stack->len) % stack->len);
 }
 
 int	find_best_candidate(t_stack *a, t_stack *b)
@@ -87,7 +79,7 @@ int	find_best_candidate(t_stack *a, t_stack *b)
 
 	b_index = 0;
 	best_score = INT_MAX;
-	while (b_index < b->length)
+	while (b_index < b->len)
 	{
 		a_index = find_target_index(a, stack_get(b, b_index));
 		score = get_score(a, b, a_index, b_index);
@@ -112,9 +104,9 @@ int	find_longest_run(t_stack *a, t_stack *b)
 	j = 0;
 	start = 0;
 	count = 0;
-	while (i < a->length * 2)
+	while (i < a->len * 2)
 	{
-		if (stack_get(a, i % a->length) < stack_get(a, (i + a->length - 1) % a->length))
+		if (stack_get(a, i % a->len) < stack_get(a, (i + a->len - 1) % a->len))
 		{
 			if (i - j > count)
 			{
@@ -125,6 +117,6 @@ int	find_longest_run(t_stack *a, t_stack *b)
 		}
 		i++;
 	}
-	rotate_stacks(a, b, (start + count) % a->length, 0);
-	return (a->length - count);
+	rotate_stacks(a, b, (start + count) % a->len, 0);
+	return (a->len - count);
 }
